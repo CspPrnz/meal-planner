@@ -15,6 +15,8 @@ import {
   MEAL_LABELS,
   Recipe,
   Ingredient,
+  Profile,
+  PROFILES,
 } from "@/lib/types";
 
 type Tab = "recipes" | "plan" | "grocery";
@@ -27,14 +29,48 @@ const FLAG: Record<Lang, string> = { en: "🇬🇧", de: "🇩🇪", es: "🇪�
 
 export default function Home() {
   const [lang, setLang] = useLocalStorage<Lang>("meal-planner-lang", "en");
-  const [weekPlan, setWeekPlan] = useLocalStorage<WeekPlan>(
-    "meal-planner-week",
-    EMPTY_WEEK
+  const [profileId, setProfileId] = useLocalStorage<string>(
+    "meal-planner-profile",
+    "olin"
   );
-  const [checkedItems, setCheckedItems] = useLocalStorage<string[]>(
-    "meal-planner-checked",
-    []
+  const profile = PROFILES.find((p) => p.id === profileId) ?? PROFILES[0];
+
+  // Per-profile week plans and checked items
+  const [allWeekPlans, setAllWeekPlans] = useLocalStorage<
+    Record<string, WeekPlan>
+  >("meal-planner-weeks", {});
+  const [allChecked, setAllChecked] = useLocalStorage<
+    Record<string, string[]>
+  >("meal-planner-all-checked", {});
+
+  const weekPlan = allWeekPlans[profile.id] ?? EMPTY_WEEK;
+  const setWeekPlan = useCallback(
+    (updater: WeekPlan | ((prev: WeekPlan) => WeekPlan)) => {
+      setAllWeekPlans((prev) => ({
+        ...prev,
+        [profile.id]:
+          typeof updater === "function"
+            ? updater(prev[profile.id] ?? EMPTY_WEEK)
+            : updater,
+      }));
+    },
+    [profile.id, setAllWeekPlans]
   );
+
+  const checkedItems = allChecked[profile.id] ?? [];
+  const setCheckedItems = useCallback(
+    (updater: string[] | ((prev: string[]) => string[])) => {
+      setAllChecked((prev) => ({
+        ...prev,
+        [profile.id]:
+          typeof updater === "function"
+            ? updater(prev[profile.id] ?? [])
+            : updater,
+      }));
+    },
+    [profile.id, setAllChecked]
+  );
+
   const [tab, setTab] = useState<Tab>("recipes");
   const [pickingSlot, setPickingSlot] = useState<{
     day: DayOfWeek;
@@ -147,25 +183,46 @@ export default function Home() {
     <div className="min-h-screen flex flex-col no-select">
       {/* HEADER */}
       <header className="bg-gradient-to-r from-orange-400 via-pink-400 to-purple-400 text-white px-4 py-3 shadow-lg">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
+          <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight shrink-0">
             🍽️ {t("appTitle")}
           </h1>
-          <div className="flex gap-1">
-            {(["en", "de", "es"] as Lang[]).map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={`text-2xl p-1 rounded-lg transition-transform ${
-                  lang === l
-                    ? "scale-125 bg-white/30"
-                    : "opacity-60 hover:opacity-100"
-                }`}
-                aria-label={`Switch to ${l}`}
-              >
-                {FLAG[l]}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            {/* Profile switcher */}
+            <div className="flex bg-white/20 rounded-full p-0.5 gap-0.5">
+              {PROFILES.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setProfileId(p.id)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm font-bold transition-all ${
+                    profile.id === p.id
+                      ? "bg-white text-gray-800 shadow-md scale-105"
+                      : "text-white/80 hover:bg-white/20"
+                  }`}
+                  aria-label={`Switch to ${p.name}`}
+                >
+                  <span className="text-lg">{p.emoji}</span>
+                  <span className="hidden sm:inline text-xs">{p.name}</span>
+                </button>
+              ))}
+            </div>
+            {/* Language switcher */}
+            <div className="flex gap-0.5">
+              {(["en", "de", "es"] as Lang[]).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  className={`text-xl p-0.5 rounded-lg transition-transform ${
+                    lang === l
+                      ? "scale-125 bg-white/30"
+                      : "opacity-60 hover:opacity-100"
+                  }`}
+                  aria-label={`Switch to ${l}`}
+                >
+                  {FLAG[l]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </header>

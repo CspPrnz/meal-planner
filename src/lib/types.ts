@@ -64,3 +64,16 @@ export const MEAL_LABELS: Record<MealSlot, TranslatedString> = {
   dinner: { en: "Dinner", de: "Abendessen", es: "Cena" },
   snack: { en: "Snack", de: "Snack", es: "Merienda" },
 };
+
+export interface Profile {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string; // tailwind ring/bg color
+}
+
+export const PROFILES: Profile[] = [
+  { id: "olin", name: "Olin", emoji: "🧒", color: "green" },
+  { id: "gaby", name: "Gaby", emoji: "👩", color: "pink" },
+  { id: "felix", name: "Felix", emoji: "👨", color: "blue" },
+];
